@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout Log">
+<meta name="theme-color" content="#8b3a2a">
+<title>Workout Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=DM+Serif+Display&display=swap');
+  :root {
+    --ink: #1a1a18; --paper: #f5f0e8; --paper-dark: #ece6d4;
+    --rule: #c8bfa8; --accent: #8b3a2a; --accent-light: #c4614e; --check: #4a7c59;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--paper-dark);
+    font-family: 'Courier Prime', monospace;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 20px 14px 60px;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(200,191,168,0.3) 28px);
+  }
+  header { text-align: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 3px double var(--accent); }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 1.9rem; color: var(--accent); letter-spacing: 0.03em; }
+  header p { font-size: 0.75rem; color: #7a7060; margin-top: 3px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .date-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 16px; }
+  .date-nav button {
+    background: none; border: 1.5px solid var(--rule); color: var(--accent);
+    font-family: 'Courier Prime', monospace; font-size: 1.2rem;
+    width: 36px; height: 36px; cursor: pointer; border-radius: 3px; touch-action: manipulation;
+  }
+  #date-display { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--ink); min-width: 170px; text-align: center; }
+  .day-type-toggle { display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; }
+  .day-type-toggle button {
+    font-family: 'Courier Prime', monospace; font-size: 0.78rem; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 8px 20px; border: 1.5px solid var(--rule);
+    background: none; color: #7a7060; cursor: pointer; border-radius: 3px; touch-action: manipulation;
+  }
+  .day-type-toggle button.active { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  section.log-section {
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 16px 14px; margin-bottom: 14px; box-shadow: 2px 3px 8px rgba(0,0,0,0.07);
+  }
+  section.log-section h2 {
+    font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--accent);
+    border-bottom: 1px solid var(--rule); padding-bottom: 7px; margin-bottom: 12px;
+  }
+  .exercise-row {
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    gap: 7px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--rule);
+  }
+  .exercise-row:last-child { border-bottom: none; }
+  .ex-name { font-size: 0.82rem; font-weight: 700; }
+  .ex-sub { font-size: 0.68rem; color: #9a8f7e; }
+  .set-boxes { display: flex; gap: 6px; }
+  .set-box {
+    width: 32px; height: 32px; border: 1.5px solid var(--rule); border-radius: 3px;
+    background: var(--paper-dark); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 0.9rem; color: transparent;
+    touch-action: manipulation; user-select: none;
+  }
+  .set-box.done { background: var(--check); border-color: var(--check); color: white; }
+  .reps-input, .time-input {
+    width: 54px; font-family: 'Courier Prime', monospace; font-size: 0.8rem;
+    border: 1px solid var(--rule); border-radius: 3px; padding: 5px 4px;
+    background: var(--paper-dark); color: var(--ink); text-align: center;
+  }
+  .reps-input:focus, .time-input:focus { outline: none; border-color: var(--accent); }
+  .col-label { font-size: 0.62rem; color: #9a8f7e; text-transform: uppercase; letter-spacing: 0.07em; text-align: center; }
+  .ex-header { display: grid; grid-template-columns: 1fr auto auto auto; gap: 7px; padding-bottom: 4px; margin-bottom: 2px; }
+  .aerobic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .aerobic-field label { display: block; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.07em; color: #9a8f7e; margin-bottom: 4px; }
+  .aerobic-field input, .aerobic-field select {
+    width: 100%; font-family: 'Courier Prime', monospace; font-size: 0.85rem;
+    border: 1px solid var(--rule); border-radius: 3px; padding: 7px 8px;
+    background: var(--paper-dark); color: var(--ink);
+  }
+  .aerobic-field input:focus, .aerobic-field select:focus { outline: none; border-color: var(--accent); }
+  .borg-hint {
+    grid-column: 1 / -1; font-size: 0.68rem; color: #9a8f7e; line-height: 1.7;
+    padding: 8px 10px; background: var(--paper-dark); border-radius: 3px; border: 1px solid var(--rule);
+  }
+  .borg-hint strong { color: var(--ink); }
+  textarea.narrative {
+    width: 100%; font-family: 'Courier Prime', monospace; font-size: 0.85rem;
+    border: 1px solid var(--rule); border-radius: 3px; padding: 10px;
+    background: var(--paper-dark); color: var(--ink); resize: vertical; min-height: 68px; line-height: 1.6;
+  }
+  textarea.narrative:focus { outline: none; border-color: var(--accent); }
+  .char-hint { font-size: 0.64rem; color: #9a8f7e; text-align: right; margin-top: 4px; }
+  .actions { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    font-family: 'Courier Prime', monospace; font-size: 0.78rem; letter-spacing: 0.07em;
+    text-transform: uppercase; padding: 10px 14px; border-radius: 3px; cursor: pointer;
+    border: none; touch-action: manipulation;
+  }
+  .btn-save { background: var(--accent); color: var(--paper); flex: 2; }
+  .btn-save:active { background: var(--accent-light); }
+  .btn-clear { background: none; border: 1.5px solid var(--rule); color: #7a7060; flex: 1; }
+  .backup-row { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-backup {
+    background: none; border: 1.5px solid var(--rule); color: #7a7060;
+    font-family: 'Courier Prime', monospace; font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 8px 10px; border-radius: 3px; cursor: pointer;
+    flex: 1; touch-action: manipulation;
+  }
+  .btn-backup:active { border-color: var(--accent); color: var(--accent); }
+  .save-confirm { text-align: center; font-size: 0.74rem; color: var(--check); letter-spacing: 0.07em; min-height: 18px; margin-top: 6px; }
+  #history-list { margin-top: 4px; }
+  .history-entry { border: 1px solid var(--rule); border-radius: 4px; padding: 11px; margin-bottom: 10px; background: var(--paper); font-size: 0.76rem; }
+  .history-entry h3 { font-family: 'DM Serif Display', serif; font-size: 0.92rem; color: var(--accent); margin-bottom: 5px; }
+  .h-type { display: inline-block; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.09em; background: var(--paper-dark); border: 1px solid var(--rule); border-radius: 2px; padding: 1px 7px; color: #7a7060; margin-bottom: 5px; }
+  .h-note { font-style: italic; color: #5a5248; line-height: 1.5; margin-top: 5px; }
+  .h-ex { color: #7a7060; line-height: 1.7; }
+  .no-history { text-align: center; color: #9a8f7e; font-size: 0.8rem; padding: 14px 0; font-style: italic; }
+  .section-hidden { display: none; }
+  #install-banner {
+    display: none; background: var(--accent); color: var(--paper); text-align: center;
+    padding: 10px 14px; font-size: 0.78rem; letter-spacing: 0.05em; border-radius: 4px;
+    margin-bottom: 14px; cursor: pointer; touch-action: manipulation;
+  }
+</style>
+</head>
+<body>
+
+<div id="install-banner" onclick="installPWA()">📲 Tap to add to Home Screen</div>
+
+<header>
+  <h1>Workout Log</h1>
+  <p>Core &amp; Aerobic Program</p>
+</header>
+
+<div class="date-nav">
+  <button id="prev-day">&#8592;</button>
+  <div id="date-display"></div>
+  <button id="next-day">&#8594;</button>
+</div>
+
+<div class="day-type-toggle">
+  <button id="btn-core" class="active" onclick="setDayType('core')">Core Day</button>
+  <button id="btn-aero" onclick="setDayType('aerobic')">Aerobic Day</button>
+</div>
+
+<section class="log-section" id="core-section">
+  <h2>Core Exercises</h2>
+  <div class="ex-header">
+    <span class="col-label">Exercise</span>
+    <span class="col-label">Sets</span>
+    <span class="col-label">Reps/Time</span>
+    <span class="col-label">Wt lb</span>
+  </div>
+  <div id="exercises-container"></div>
+</section>
+
+<section class="log-section section-hidden" id="aero-section">
+  <h2>Aerobic Session</h2>
+  <div class="aerobic-grid">
+    <div class="aerobic-field">
+      <label>Activity</label>
+      <select id="aero-type">
+        <option value="Rowing">Rowing</option>
+        <option value="Biking">Biking</option>
+      </select>
+    </div>
+    <div class="aerobic-field">
+      <label>Duration (min)</label>
+      <input type="number" id="aero-duration" placeholder="30" min="0">
+    </div>
+    <div class="aerobic-field">
+      <label>Distance / Output</label>
+      <input type="text" id="aero-distance" placeholder="e.g. 5000m">
+    </div>
+    <div class="aerobic-field">
+      <label>Borg Scale (6–20)</label>
+      <input type="number" id="aero-borg" placeholder="13" min="6" max="20">
+    </div>
+    <div class="borg-hint">
+      <strong>Borg Scale</strong><br>
+      6–8 Very light &nbsp;·&nbsp; 9–10 Light &nbsp;·&nbsp; 11–12 Fairly light<br>
+      13–14 Somewhat hard &nbsp;·&nbsp; 15–16 Hard<br>
+      17–18 Very hard &nbsp;·&nbsp; 19–20 Max effort
+    </div>
+  </div>
+</section>
+
+<section class="log-section">
+  <h2>Daily Note</h2>
+  <textarea class="narrative" id="narrative" placeholder="One or two sentences about how today felt…" maxlength="280"></textarea>
+  <div class="char-hint" id="char-count">0 / 280</div>
+</section>
+
+<section class="log-section">
+  <div class="actions">
+    <button class="btn btn-clear" onclick="clearDay()">Clear</button>
+    <button class="btn btn-save" onclick="saveDay()">Save Entry</button>
+  </div>
+  <div class="backup-row">
+    <button class="btn-backup" onclick="exportData()">⬇ Export Backup</button>
+    <button class="btn-backup" onclick="document.getElementById('import-file').click()">⬆ Import Backup</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+  <div class="save-confirm" id="save-confirm"></div>
+</section>
+
+<section class="log-section">
+  <h2>Recent Entries</h2>
+  <div id="history-list"></div>
+</section>
+
+<script>
+const EXERCISES = [
+  { id:'birddog',  name:'Bird Dog',            sub:'timed / side', type:'timed', sets:2 },
+  { id:'plank',    name:'Plank',               sub:'timed hold',   type:'timed', sets:2 },
+  { id:'march',    name:'Seated March (Ball)', sub:'reps / side',  type:'reps',  sets:2 },
+  { id:'woodchop', name:'DB Wood Chop',         sub:'reps / side',  type:'reps',  sets:2, weight:true },
+  { id:'curl',     name:'DB Curl',              sub:'reps',         type:'reps',  sets:2, weight:true },
+  { id:'tricep',   name:'DB Triceps Ext.',      sub:'reps',         type:'reps',  sets:2, weight:true },
+  { id:'hydrant',  name:'Fire Hydrant',         sub:'reps / side',  type:'reps',  sets:2 },
+  { id:'glute',    name:'Glute Bridge',         sub:'reps',         type:'reps',  sets:2 },
+];
+
+let currentDate = new Date(); currentDate.setHours(0,0,0,0);
+let dayType = 'core';
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'block';
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('install-banner').style.display = 'none'; });
+}
+
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function formatDate(d) { return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }); }
+
+function updateDateDisplay() {
+  document.getElementById('date-display').textContent = formatDate(currentDate);
+  loadDay();
+}
+
+document.getElementById('prev-day').onclick = () => { currentDate.setDate(currentDate.getDate()-1); updateDateDisplay(); };
+document.getElementById('next-day').onclick = () => { currentDate.setDate(currentDate.getDate()+1); updateDateDisplay(); };
+
+function setDayType(type) {
+  dayType = type;
+  document.getElementById('btn-core').classList.toggle('active', type==='core');
+  document.getElementById('btn-aero').classList.toggle('active', type==='aerobic');
+  document.getElementById('core-section').classList.toggle('section-hidden', type!=='core');
+  document.getElementById('aero-section').classList.toggle('section-hidden', type!=='aerobic');
+}
+
+function buildExercises() {
+  const c = document.getElementById('exercises-container'); c.innerHTML = '';
+  EXERCISES.forEach(ex => {
+    const row = document.createElement('div'); row.className = 'exercise-row'; row.dataset.id = ex.id;
+    const nameDiv = document.createElement('div');
+    nameDiv.innerHTML = `<div class="ex-name">${ex.name}</div><div class="ex-sub">${ex.sub}</div>`;
+    const setsDiv = document.createElement('div'); setsDiv.className = 'set-boxes';
+    for (let i=0; i<ex.sets; i++) {
+      const box = document.createElement('div'); box.className = 'set-box'; box.dataset.set = i;
+      box.textContent = '✓'; box.onclick = () => box.classList.toggle('done'); setsDiv.appendChild(box);
+    }
+    const valDiv = document.createElement('div');
+    valDiv.innerHTML = ex.type==='timed'
+      ? `<input class="time-input" type="text" placeholder="20s" data-field="time">`
+      : `<input class="reps-input" type="number" placeholder="12" data-field="reps">`;
+    const wtDiv = document.createElement('div');
+    wtDiv.innerHTML = ex.weight
+      ? `<input class="reps-input" type="number" placeholder="—" data-field="weight">`
+      : `<span style="color:var(--rule);text-align:center;display:block;font-size:1rem">—</span>`;
+    row.appendChild(nameDiv); row.appendChild(setsDiv); row.appendChild(valDiv); row.appendChild(wtDiv);
+    c.appendChild(row);
+  });
+}
+
+document.getElementById('narrative').addEventListener('input', function() {
+  document.getElementById('char-count').textContent = `${this.value.length} / 280`;
+});
+
+function getFormData() {
+  const exercises = {};
+  document.querySelectorAll('.exercise-row').forEach(row => {
+    const id = row.dataset.id;
+    const sets = Array.from(row.querySelectorAll('.set-box')).map(b => b.classList.contains('done'));
+    const valEl = row.querySelector('[data-field="reps"],[data-field="time"]');
+    const wtEl = row.querySelector('[data-field="weight"]');
+    exercises[id] = { sets, value: valEl ? valEl.value : '', weight: wtEl ? wtEl.value : '' };
+  });
+  return {
+    dayType, exercises,
+    aerobic: {
+      type: document.getElementById('aero-type').value,
+      duration: document.getElementById('aero-duration').value,
+      distance: document.getElementById('aero-distance').value,
+      borg: document.getElementById('aero-borg').value,
+    },
+    narrative: document.getElementById('narrative').value,
+  };
+}
+
+function setFormData(data) {
+  if (!data) return;
+  setDayType(data.dayType || 'core');
+  if (data.exercises) {
+    document.querySelectorAll('.exercise-row').forEach(row => {
+      const d = data.exercises[row.dataset.id]; if (!d) return;
+      row.querySelectorAll('.set-box').forEach((b,i) => b.classList.toggle('done', !!d.sets[i]));
+      const valEl = row.querySelector('[data-field="reps"],[data-field="time"]');
+      const wtEl = row.querySelector('[data-field="weight"]');
+      if (valEl) valEl.value = d.value || '';
+      if (wtEl) wtEl.value = d.weight || '';
+    });
+  }
+  if (data.aerobic) {
+    document.getElementById('aero-type').value = data.aerobic.type || 'Rowing';
+    document.getElementById('aero-duration').value = data.aerobic.duration || '';
+    document.getElementById('aero-distance').value = data.aerobic.distance || '';
+    document.getElementById('aero-borg').value = data.aerobic.borg || '';
+  }
+  const narr = document.getElementById('narrative');
+  narr.value = data.narrative || '';
+  document.getElementById('char-count').textContent = `${narr.value.length} / 280`;
+}
+
+function saveDay() {
+  localStorage.setItem('wlog_' + dateKey(currentDate), JSON.stringify(getFormData()));
+  const msg = document.getElementById('save-confirm');
+  msg.textContent = '✓ Entry saved';
+  setTimeout(() => msg.textContent = '', 2000);
+  renderHistory();
+}
+
+function clearDay() {
+  buildExercises();
+  document.getElementById('narrative').value = '';
+  document.getElementById('char-count').textContent = '0 / 280';
+  ['aero-duration','aero-distance','aero-borg'].forEach(id => document.getElementById(id).value = '');
+}
+
+function loadDay() {
+  clearDay();
+  const raw = localStorage.getItem('wlog_' + dateKey(currentDate));
+  if (raw) { try { setFormData(JSON.parse(raw)); } catch(e) {} }
+}
+
+function exportData() {
+  const all = {};
+  Object.keys(localStorage).filter(k => k.startsWith('wlog_')).forEach(k => {
+    try { all[k] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+  });
+  const blob = new Blob([JSON.stringify(all, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `workout-backup-${dateKey(currentDate)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function importData(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      Object.keys(data).forEach(k => { if (k.startsWith('wlog_')) localStorage.setItem(k, JSON.stringify(data[k])); });
+      loadDay(); renderHistory();
+      const msg = document.getElementById('save-confirm');
+      msg.textContent = '✓ Backup restored';
+      setTimeout(() => msg.textContent = '', 2500);
+    } catch(err) { alert('Could not read backup file.'); }
+  };
+  reader.readAsText(file); event.target.value = '';
+}
+
+function borgDesc(n) {
+  if (n<=8) return 'Very light'; if (n<=10) return 'Light'; if (n<=12) return 'Fairly light';
+  if (n<=14) return 'Somewhat hard'; if (n<=16) return 'Hard'; if (n<=18) return 'Very hard';
+  return 'Max effort';
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('wlog_')).sort().reverse().slice(0,7);
+  if (!keys.length) { container.innerHTML = '<div class="no-history">No entries yet.</div>'; return; }
+  container.innerHTML = '';
+  keys.forEach(key => {
+    const dateStr = key.replace('wlog_','');
+    const d = new Date(dateStr + 'T12:00:00');
+    let data; try { data = JSON.parse(localStorage.getItem(key)); } catch(e) { return; }
+    const entry = document.createElement('div'); entry.className = 'history-entry';
+    let exLines = '';
+    if (data.dayType==='core' && data.exercises) {
+      EXERCISES.forEach(ex => {
+        const d2 = data.exercises[ex.id]; if (!d2) return;
+        const done = d2.sets.filter(Boolean).length;
+        if (done>0 || d2.value) {
+          const wt = d2.weight ? ` @ ${d2.weight}lb` : '';
+          exLines += `${ex.name}: ${done} set${done!==1?'s':''} ${d2.value ? '· '+d2.value:''}${wt}<br>`;
+        }
+      });
+    } else if (data.dayType==='aerobic' && data.aerobic) {
+      const a = data.aerobic;
+      const bl = a.borg ? ` (${borgDesc(parseInt(a.borg))})` : '';
+      exLines = `${a.type||''} · ${a.duration||'—'} min · ${a.distance||'—'} · Borg ${a.borg||'—'}${bl}`;
+    }
+    entry.innerHTML = `
+      <h3>${formatDate(d)}</h3>
+      <span class="h-type">${data.dayType==='aerobic'?'Aerobic':'Core'}</span>
+      <div class="h-ex">${exLines}</div>
+      ${data.narrative ? `<div class="h-note">"${data.narrative}"</div>` : ''}
+    `;
+    container.appendChild(entry);
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE='workout-log-v1';
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll([self.location.href]))));
+    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+  `;
+  const blob = new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+updateDateDisplay();
+renderHistory();
+</script>
+</body>
+</html>
